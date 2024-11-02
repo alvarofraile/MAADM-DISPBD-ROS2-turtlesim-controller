@@ -4,44 +4,45 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Char
 from geometry_msgs.msg import Twist
+from std_msgs.msg import String
 
 class TurtlesimController(Node):
     def __init__(self):
         super().__init__('turtlesim_controller')
 
-        self.speed = 0.5
-        self.rotation_speed = 0.5
+        self.speed = 1
+        self.rotation_speed = 1
 
-        self.char_subscriber = self.create_subscription(Char, "charstream", self.process_action, 10)
+        self.char_subscriber = self.create_subscription(String, "keyboard", self.process_action, 10)
         self.ts_publisher = self.create_publisher(Twist, '/turtle1/cmd_vel', 10)
         self.get_logger().info("Controlador Turtlesim creado")
 
     def process_action(self, msg):
-        character = str(msg.data)
+        characters = str(msg.data)
         twist = Twist()
         movement = 0.0
         rotation = 0.0
 
-        if character in ["119", "87"]:
+        if "w" in characters:
             movement += self.speed
             self.ts_publisher.publish(twist)
             self.get_logger().info("Forward")
-        if character in ["115", "83"]:
+        if "s" in characters:
             movement += -self.speed
             self.ts_publisher.publish(twist)
             self.get_logger().info("Backward")
-        if character in ["97", "65"]:
+        if "a" in characters:
             rotation += self.rotation_speed
             self.ts_publisher.publish(twist)
             self.get_logger().info("Rotate Left")
-        if character in ["100", "68"]:
+        if "d" in characters:
             rotation += -self.rotation_speed
             self.get_logger().info("Rotate Right")
-        if character in ["32"]:
+        if " " in characters:
             self.toggle_drawing()
-        if character in ["99", "67"]:
+        if "c" in characters:
             self.clear_drawn()
-        if character in ["114", "82"]:
+        if "r" in characters:
             self.reset_position()
 
         twist.linear.x = movement
