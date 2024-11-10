@@ -6,6 +6,7 @@ from std_srvs.srv import Empty  # Para el servicio de limpieza de trazos
 from turtlesim.srv import SetPen  # Servicio para cambiar el color de la traza
 from geometry_msgs.msg import Twist
 from std_msgs.msg import String
+from turtlesim.srv import SetPen, TeleportAbsolute  # Servicio para mover la tortuga
 
 class TurtlesimController(Node):
     def __init__(self):
@@ -15,6 +16,7 @@ class TurtlesimController(Node):
         self.rotation_speed = 1
         self.drawing_enabled = True  # Variable para alternar el estado del dibujo
         self.clear_drawn_lines = False
+        self.position_reset_status = False
 
         self.char_subscriber = self.create_subscription(String, "keyboard", self.process_action, 10)
         self.ts_publisher = self.create_publisher(Twist, '/turtle1/cmd_vel', 10)
@@ -29,7 +31,12 @@ class TurtlesimController(Node):
         while not self.set_pen_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Esperando a que el servicio /turtle1/set_pen esté disponible...')
 
-        self.get_logger().info("Controlador Turtlesim creado")
+        # Cliente del servicio para teletransportar la tortuga
+        self.teleport_client = self.create_client(TeleportAbsolute, '/turtle1/teleport_absolute')
+        while not self.teleport_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Esperando a que el servicio /turtle1/teleport_absolute esté disponible...')
+
+        self.get_logger().info("Controlador Turtlesim creado con éxito")
 
     def process_action(self, msg):
         characters = str(msg.data)
@@ -64,7 +71,9 @@ class TurtlesimController(Node):
             self.clear_drawn(False)
 
         if "r" in characters:
-            self.reset_position()
+            self.reset_position(True)
+        else:
+            self.reset_position(False)
 
         twist.linear.x = movement
         twist.angular.z = rotation
@@ -102,8 +111,17 @@ class TurtlesimController(Node):
             self.clear_client.call_async(request)
             self.get_logger().info("Limpieza de trazos")
 
-    def reset_position(self):
-        pass
+    def reset_position(self, status):
+        self.position_reset_status = status
+
+        if(self.position_reset_status):
+            # Teletransporta la tortuga al centro (5.5, 5.5) y orienta hacia 0 grados
+            request = TeleportAbsolute.Request()
+            request.x = 5.5
+            request.y = 5.5
+            request.theta = 0.0  # Orientación hacia la derecha
+
+            self.teleport_client.call_async(request)# Teletransporta la tortuga al centro (5.5, 5.5) y orienta hacia 0 grados
 
 def main(args=None):
     try:
