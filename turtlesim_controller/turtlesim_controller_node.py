@@ -8,14 +8,17 @@ from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from turtlesim.srv import SetPen, TeleportAbsolute  # Servicio para mover la tortuga
 import math
+from rcl_interfaces.msg import SetParametersResult
 
 class TurtlesimController(Node):
     def __init__(self):
         super().__init__('turtlesim_controller')
 
-        self.speed = 1
-        self.rotation_speed = 1
-        self.drawing_enabled = True  # Variable para alternar el estado del dibujo
+        self.declare_parameter('speed', 1.0)
+
+        self.speed = self.get_parameter('speed').value
+        self.rotation_speed = 1.0
+        self.drawing_enabled = True
         self.clear_drawn_lines = False
         self.position_reset_status = False
 
@@ -37,7 +40,22 @@ class TurtlesimController(Node):
         while not self.teleport_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Esperando a que el servicio /turtle1/teleport_absolute esté disponible...')
 
+        # Callback para detectar cambios en los parámetros
+        self.add_on_set_parameters_callback(self.on_parameter_change)
+
         self.get_logger().info("Controlador Turtlesim creado con éxito")
+
+    def on_parameter_change(self, params):
+        """Callback que se activa cuando cambia algún parámetro."""
+        for param in params:
+            if param.name == 'speed' and param.type_ == param.Type.DOUBLE:
+                try:
+                    self.speed = float(param.value)
+                    self.get_logger().info(f"Parámetro 'speed' cambiado a {self.speed}")
+                except ValueError:
+                    self.get_logger().error(f"Valor inválido para 'speed': {param.value}")
+                    return SetParametersResult(successful=False)
+        return SetParametersResult(successful=True)
 
     def process_action(self, msg):
         characters = str(msg.data)
