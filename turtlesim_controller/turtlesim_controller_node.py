@@ -7,6 +7,7 @@ from turtlesim.srv import SetPen  # Servicio para cambiar el color de la traza
 from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from turtlesim.srv import SetPen, TeleportAbsolute  # Servicio para mover la tortuga
+import math
 
 class TurtlesimController(Node):
     def __init__(self):
@@ -60,7 +61,7 @@ class TurtlesimController(Node):
             rotation += -self.rotation_speed
             self.get_logger().info("Rotate Right")
 
-        if " " in characters:
+        if " " not in characters:
             self.toggle_drawing(True)
         else:
             self.toggle_drawing(False)
@@ -74,11 +75,10 @@ class TurtlesimController(Node):
             self.reset_position(True)
         else:
             self.reset_position(False)
+            twist.linear.x = movement
+            twist.angular.z = rotation
 
-        twist.linear.x = movement
-        twist.angular.z = rotation
-
-        self.ts_publisher.publish(twist)
+            self.ts_publisher.publish(twist)
 
     def toggle_drawing(self, status):
         # Alterna el estado de dibujo
@@ -115,13 +115,13 @@ class TurtlesimController(Node):
         self.position_reset_status = status
 
         if(self.position_reset_status):
-            # Teletransporta la tortuga al centro (5.5, 5.5) y orienta hacia 0 grados
+            # Teletransporta la tortuga al centro (5.5, 5.5) y orienta hacia 90 grados
             request = TeleportAbsolute.Request()
             request.x = 5.5
             request.y = 5.5
-            request.theta = 0.0  # Orientación hacia la derecha
+            request.theta = math.radians(90)  # Orientación hacia arriba en radianes
 
-            self.teleport_client.call_async(request)# Teletransporta la tortuga al centro (5.5, 5.5) y orienta hacia 0 grados
+            self.teleport_client.call_async(request)
 
 def main(args=None):
     try:
