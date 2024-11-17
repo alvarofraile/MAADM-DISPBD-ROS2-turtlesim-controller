@@ -45,7 +45,6 @@ class KeyboardNode(Node):
         msg = String()
         msg.data = ''.join(sorted(self.pressed_keys))
         self.publisher.publish(msg)
-        self.get_logger().info(f"Teclas actualmente presionadas: {msg.data}")
         return True
 
     def run(self):
